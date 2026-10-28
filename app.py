@@ -19,7 +19,9 @@ st.set_page_config(
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR / "data" / "crop_dataset.csv"
+DATA_GZ_PATH = BASE_DIR / "data" / "crop_dataset.csv.gz"
 MODEL_PATH = BASE_DIR / "models" / "best_crop_model.joblib"
+MODEL_RELEASE_URL = "https://github.com/Yuvaraj-S-0809/CropPredictionML/releases/download/v1.0.0/best_crop_model.joblib"
 RESULTS_PATH = BASE_DIR / "outputs" / "model_comparison.csv"
 INFO_PATH = BASE_DIR / "outputs" / "best_model_info.json"
 OUTPUTS_DIR = BASE_DIR / "outputs"
@@ -759,11 +761,20 @@ def get_crop_emoji(name):
 # ==================================================
 @st.cache_resource
 def load_model():
+    if not MODEL_PATH.exists():
+        MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        import urllib.request
+        try:
+            with st.spinner("Downloading trained model weights from GitHub Release (v1.0.0)..."):
+                urllib.request.urlretrieve(MODEL_RELEASE_URL, MODEL_PATH)
+        except Exception as e:
+            st.error(f"Error fetching model weights: {e}")
     return joblib.load(MODEL_PATH)
 
 @st.cache_data
 def load_dataset():
-    data = pd.read_csv(DATA_PATH)
+    target_data = DATA_PATH if DATA_PATH.exists() else DATA_GZ_PATH
+    data = pd.read_csv(target_data)
     for col in data.select_dtypes(include=["object", "str"]).columns:
         data[col] = (
             data[col]
@@ -786,12 +797,8 @@ def load_model_info():
             return json.load(f)
     return {}
 
-if not DATA_PATH.exists():
-    st.error(f"Dataset missing at: {DATA_PATH}")
-    st.stop()
-
-if not MODEL_PATH.exists():
-    st.error(f"Trained model missing at: {MODEL_PATH}")
+if not DATA_PATH.exists() and not DATA_GZ_PATH.exists():
+    st.error(f"Dataset missing at: {DATA_PATH} or {DATA_GZ_PATH}")
     st.stop()
 
 df = load_dataset()
