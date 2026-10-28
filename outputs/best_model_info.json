@@ -1,0 +1,6 @@
+{
+    "best_model": "Random Forest",
+    "selection_metric": "5-fold CV Macro F1",
+    "selection_score": 0.9839363788767648,
+    "test_accuracy": 0.9840350877192983
+}
